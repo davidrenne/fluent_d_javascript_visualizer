@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html>
+ <head>
+  <meta charset="UTF-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+  <title>Fluent D Log Visualizer</title>
+  <meta name="author" content="David Renne">
+  <meta name="description" content="This file will take any fluent D default JSON log and allow you to view it visually in a browser">
+  <script type="text/javascript" src="https://ajax.googleapis.com/ajax/libs/jquery/1.6.1/jquery.js"></script>
+  <script type="text/javascript">
+
+  function start_over() {
+    $('#start').fadeIn('slow');
+    $('#output').html('');
+  }
+
+  function fluent_logs_to_html() {
+    var logs = $("#fluent_logs").val().split("\n");
+    $('#output').html('<input type="button" value="Start Over" onclick="start_over()">');
+    $('#output').append('<table cellspacing="0" cellpadding="0"></table>');
+    var table = $('#output').children();
+    $.each( logs, function(i, log) {
+      if ($.trim( log ) != '') {
+        var pieces = log.split(": {");
+        var json   = "{" + pieces[1];
+        var tag    = '';
+        for (var index = pieces[0].length; index > 0; index--) {
+          var aChar = pieces[0].charAt(index);
+          tag += aChar;
+          if (aChar == ' ') {
+            break;
+          }
+        }
+        var tag      = tag.split("").reverse().join("");
+        var the_date = $.trim( pieces[0].replace(tag,'') );
+        eval("var json_log = " + json + ";");
+        
+        var level = '';
+        var color = '';
+        if (json_log.hasOwnProperty('level')) {
+          level = ' - ' + json_log.level + ' LEVEL';
+          if (json_log.level == 'FATAL') {
+            color = 'style="color:red"';
+          } else {
+            color = '';
+          }
+          delete json_log['level'];
+        }
+        
+        table.append( '<tr ' + color + '><td colspan="50"><h1><strong>' + $.trim(the_date) + ' (' + $.trim(tag) + ')' + level + '</strong></h1></td></tr>' );
+        if (json_log.hasOwnProperty('messages')) {
+          table.append( '<tr ' + color + '><td style="padding-left:50px;border-right: 4px solid black;border-left: 4px solid black;border-top: 4px solid black;"><h3>Main Message Logs</h3></td></tr>' );
+          table.append( '<tr ' + color + '><td style="padding-left:65px;border-right: 4px solid black;border-bottom: 4px solid black;border-left: 4px solid black;"><pre>' + json_log.messages + '</pre></td></tr>' );
+          delete json_log['messages'];
+        }
+        
+        Object.keys(json_log).forEach(function(key) {
+          table.append( '<tr ' + color + '><td style="padding-left:50px;"><h3>' + key + '</h3></td></tr>' );
+          table.append( '<tr ' + color + '><td style="padding-left:65px;"><pre>' + json_log[key] + '</pre></td></tr>' );
+        });
+
+      }
+    });
+    $('#start').fadeOut('slow');
+  } 
+  </script>
+ </head>
+ <body>
+  <div id="start"> 
+    <textarea id="fluent_logs" style="width:90%;height:400px;">
+
+2013-01-16 08:41:08 -0500 my_fluentd_tag: {"messages":"Started GET \"/assets/builder.js\" for 192.168.91.2 at 2013-01-16 08:41:08 -0500","level":"INFO"}
+2013-01-16 08:41:08 -0500 my_fluentd_tag: {"messages":"Started GET \"/assets/effects.js\" for 192.168.91.2 at 2013-01-16 08:41:08 -0500","level":"INFO"}
+2013-01-16 08:41:08 -0500 my_fluentd_tag: {"messages":"Started GET \"/assets/dragdrop.js\" for 192.168.91.2 at 2013-01-16 08:41:08 -0500","level":"INFO"}
+2013-01-16 08:41:08 -0500 my_fluentd_tag: {"messages":"Started GET \"/assets/slider.js\" for 192.168.91.2 at 2013-01-16 08:41:08 -0500","level":"INFO"}
+2013-01-16 08:41:08 -0500 my_fluentd_tag: {"messages":"Started GET \"/assets/sound.js\" for 192.168.91.2 at 2013-01-16 08:41:08 -0500","level":"INFO"}
+2013-01-16 08:41:08 -0500 my_fluentd_tag: {"messages":"Started GET \"/assets/controls.js\" for 192.168.91.2 at 2013-01-16 08:41:08 -0500","level":"INFO"}
+2013-01-16 08:41:11 -0500 my_fluentd_tag: {"messages":"Started GET \"/assets/big.css?body=1\" for 192.168.91.2 at 2013-01-16 08:41:11 -0500","level":"INFO","custom_blah1":"you","custom_blah2":"can","custom_blah3":"have","custom_blah4":"custom!!!!!!!!!!!!!!\n\n      testing"}
+2013-01-16 08:41:11 -0500 my_fluentd_tag: {"messages":"Started GET \"/assets/hfi_print.css?body=1\" for 192.168.91.2 at 2013-01-16 08:41:11 -0500","level":"INFO","custom_blah":"something else"}
+2013-01-16 10:04:25 -0500 my_fluentd_tag: {"messages":"\n\nStarted GET \"/\" for 192.168.91.2 at 2013-01-16 10:03:56 -0500\nProcessing by MyController#index as HTML\nCompleted 500 Internal Server Error in 29171ms\n\nNameError (uninitialized constant Fluent::Logger::DEBUG):\n  app/helpers/fluent_d_helper.rb:13:in `log'\n  app/controllers/home_controller.rb:41:in `index'\n  config/initializers/quiet_assets.rb:23:in `call_with_quiet_assets'\n\n\n  Rendered vendor/bundle/ruby/1.9.1/gems/actionpack-3.2.3/lib/action_dispatch/middleware/templates/rescues/_trace.erb (4.6ms)\n  Rendered vendor/bundle/ruby/1.9.1/gems/actionpack-3.2.3/lib/action_dispatch/middleware/templates/rescues/_request_and_response.erb (2.0ms)\n  Rendered vendor/bundle/ruby/1.9.1/gems/actionpack-3.2.3/lib/action_dispatch/middleware/templates/rescues/diagnostics.erb within rescues/layout (14.4ms)","level":"FATAL"}
+
+    </textarea>
+    <input type="button" value="Convert Logs" onclick="fluent_logs_to_html()">
+  </div>
+
+  <div id="output"></div> 
+ </body>
+</html>
